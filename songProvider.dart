@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import '../Components/playlistModel.dart'; // Import your Playlist model
 
 class SongProvider extends ChangeNotifier {
   final OnAudioQuery _audioQuery = OnAudioQuery();
@@ -8,6 +11,7 @@ class SongProvider extends ChangeNotifier {
   late Map<String, List<SongModel>> _albumsMap = {}; // Map to store songs grouped by album
   late Map<String, int> _albumSongCounts = {}; // Store the number of songs for each album
   late int _selectedSongIndex = 0; // Track the index of the selected song
+  late List<Playlist> _playlists = []; // List to store playlists
 
   List<String> get songUrls => _songUrls; // Getter for song URLs
 
@@ -118,6 +122,7 @@ class SongProvider extends ChangeNotifier {
     // If the selected song or its album is not found, return -1 or handle it as needed
     return -1;
   }
+
   // Function to get the URI of the first song of the given artist
   int? getFirstSongIdByArtist(String artist) {
     final List<SongModel> songsByArtist = _songs.where((song) => song.artist == artist).toList();
@@ -125,5 +130,46 @@ class SongProvider extends ChangeNotifier {
       return songsByArtist[0].id; // Return ID of the first song by the artist
     }
     return null; // Return null if no songs found for the artist
+  }
+
+  // Method to add a new playlist
+  void addPlaylist(Playlist playlist) {
+    _playlists.add(playlist);
+    _savePlaylists(); // Save playlists after adding a new one
+    print('Playlist added: ${playlist.name}'); // Add a print statement to log the added playlist
+  }
+
+  // Method to add a song to a playlist
+  void addSongToPlaylist(String playlistName, String songId) {
+    Playlist? playlist = _playlists.firstWhere((playlist) => playlist.name == playlistName);
+    if (playlist != null) {
+      playlist.addSong(songId);
+      _savePlaylists(); // Save playlists after adding a song
+    }
+  }
+
+  // Method to save playlists to shared preferences
+  Future<void> _savePlaylists() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> playlistStrings = _playlists.map((playlist) => jsonEncode(playlist.toMap())).toList();
+    await prefs.setStringList('playlists', playlistStrings);
+  }
+
+  // Method to load playlists from shared preferences
+  Future<void> loadPlaylists() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? playlistStrings = prefs.getStringList('playlists');
+    if (playlistStrings != null) {
+      _playlists = playlistStrings.map((playlistString) => Playlist.fromMap(jsonDecode(playlistString))).toList();
+    }
+  }
+
+  // Getter for playlists
+  List<Playlist> get playlists => _playlists;
+
+  // Method to set the list of playlists
+  void setPlaylists(List<Playlist> playlists) {
+    _playlists = playlists;
+    notifyListeners();
   }
 }

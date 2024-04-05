@@ -20,7 +20,7 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (context) => ThemeProvider()),
           ChangeNotifierProvider(create: (context) => SongProvider()),
-          //ChangeNotifierProvider(create: (context) => AlbumProvider()),
+
         ],
         child: const MyApp()
     ),
