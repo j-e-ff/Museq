@@ -1,25 +1,59 @@
+import 'dart:typed_data';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:my_first_flutter_project/Themes/theme_Provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
-class AlbumArtDisplay extends StatelessWidget {
-  final int songId;
+class AlbumArtWidget extends StatefulWidget {
+  final int id;
 
-  const AlbumArtDisplay({Key? key, required this.songId}) : super(key: key);
+  const AlbumArtWidget({Key? key, required this.id}) : super(key: key);
+
+  @override
+  _AlbumArtWidgetState createState() => _AlbumArtWidgetState();
+}
+
+class _AlbumArtWidgetState extends State<AlbumArtWidget> with AutomaticKeepAliveClientMixin {
+  Uint8List? _artwork;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlbumArt();
+  }
+
+  Future<void> _loadAlbumArt() async {
+    try {
+      final artwork = await OnAudioQuery().queryArtwork(
+        widget.id as int,
+        ArtworkType.AUDIO as ArtworkType,
+        size: 5000,
+      );
+      if (mounted) {
+        setState(() {
+          _artwork = artwork;
+        });
+      }
+    } catch (e) {
+      print('Error loading album art: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return QueryArtworkWidget(
-      id: songId,
-      type: ArtworkType.AUDIO,
-      artworkQuality: FilterQuality.high,
-      size: 9000,
-      artworkHeight: 300,
-      artworkWidth: 300,
-      nullArtworkWidget: Icon(Icons.music_note),
-    );
+    super.build(context); // Ensure super.build is called first
+    return _artwork != null
+        ? Image.memory(
+      _artwork!,
+      width: 300,
+      height: 300,
+      fit: BoxFit.cover,
+    )
+        : Icon(Icons.music_note);
   }
 }
 
@@ -118,12 +152,14 @@ class _MediaPlayerState extends State<MediaPlayer> {
   Widget _buildMiniPlayer() {
     return Row(
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          width: isExpanded ? 200 : 60, // Adjust the width based on expansion
-          height: 60, // Set the height to create a square
-          child: AlbumArtDisplay(songId: widget.songs[currentSongIndex].id),
+        Hero(
+          tag: 'albumArt_${widget.songs[currentSongIndex].id}', // Unique tag for the artwork
+          child: Container(
+            key: ValueKey(widget.songs[currentSongIndex].id), // Add a key with a unique value
+            width: isExpanded ? 200 : 60, // Adjust the width based on expansion
+            height: 60, // Set the height to create a square
+            child: AlbumArtWidget(id: widget.songs[currentSongIndex].id),
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -173,7 +209,13 @@ class _MediaPlayerState extends State<MediaPlayer> {
               curve: Curves.easeInOut,
               padding: const EdgeInsets.only(top: 50),
               alignment: Alignment.topCenter,
-              child: AlbumArtDisplay(songId: widget.songs[currentSongIndex].id),
+              child: Hero(
+                tag: 'albumArt_${widget.songs[currentSongIndex].id}', // Use the same unique tag
+                child: AlbumArtWidget(
+                  key: ValueKey(widget.songs[currentSongIndex].id), // Add a key with a unique value
+                  id: widget.songs[currentSongIndex].id,
+                ),
+              ),
             ),
             SingleChildScrollView(
               child: Column(
@@ -229,7 +271,6 @@ class _MediaPlayerState extends State<MediaPlayer> {
     );
   }
 
-
   String formatTime(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
@@ -280,7 +321,9 @@ class _MediaPlayerState extends State<MediaPlayer> {
           child: ProgressBar(
             progress: snapshot.data ?? Duration.zero,
             buffered: audioPlayer.bufferedPosition,
-            total: audioPlayer.duration ?? Duration.zero,
+            total: audioPlayer.duration ?? Duration.zero, onSeek: (duration){
+              audioPlayer.seek(duration);
+          },
             thumbColor: Colors.blue,
             progressBarColor: Colors.blue,
             baseBarColor: Colors.grey.shade800,
@@ -292,5 +335,3 @@ class _MediaPlayerState extends State<MediaPlayer> {
   }
 
 }
-
-
