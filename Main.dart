@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:miniplayer/miniplayer.dart';
 import 'package:my_first_flutter_project/Components/my_drawer.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'Pages/albums_Page.dart';
 import 'Pages/artist_Page.dart';
 import 'Pages/playlist_Page.dart';
@@ -17,19 +17,18 @@ import 'Components/MediaPlayer.dart';
 void main() {
   runApp(
     MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (context) => ThemeProvider()),
-          ChangeNotifierProvider(create: (context) => SongProvider()),
-
-        ],
-        child: const MyApp()
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => SongProvider()),
+      ],
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  // This widget is the root of your application.
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -40,7 +39,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   final String title;
 
@@ -49,7 +48,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
+
   late TextEditingController _searchController;
   late int _selectedSongIndex; // Track selected song index for the panel
   late List<Widget> _widgetOptions;
@@ -62,7 +62,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _selectedSongIndex = 0;
     _searchController = TextEditingController();
     _widgetOptions = [
-      HomePage(),
       FavoritesPage(),
       AlbumsPage(
         onSongSelected: handleSongSelected,
@@ -70,25 +69,25 @@ class _MyHomePageState extends State<MyHomePage> {
       SongsPage(
         onSongSelected: handleSongSelected,
       ),
-      PlaylistPage(),
+      PlaylistPage(
+        onSongSelected: handleSongSelected,
+      ),
       ArtistPage(
         onSongSelected: handleSongSelected,
       ),
     ];
   }
+
   void handleSongSelected(List<SongModel> songList, int selectedSongIndex) {
-    // Implement the functionality to handle the selected song index here
-    // For example, you can update the panel with the selected song index.
     _selectedSongList = songList;
     _isSongSelected = true;
     _updateSelectedSongIndex(selectedSongIndex);
   }
 
-  void _handleSongDeselected() {
+  void _updateSelectedSongIndex(int index) {
     setState(() {
-      _isSongSelected = false;
+      _selectedSongIndex = index;
     });
-    // You can add more logic here if needed
   }
 
   @override
@@ -97,7 +96,24 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Stack(
         children: [
           _widgetOptions.elementAt(_selectedIndex),
-          if (_isSongSelected) _buildSlidingUpPanel(),
+          if (_isSongSelected)
+            Miniplayer(
+              minHeight: 70,
+              maxHeight: 750,
+              builder: (height, percentage) {
+                return MediaPlayer(
+                  songs: _selectedSongList,
+                  initialSongIndex: _selectedSongIndex,
+                  onSongChanged: (int newIndex) {
+                    setState(() {
+                      _selectedSongIndex = newIndex;
+                    });
+                  },
+                  minHeight: 70, // Adjust as needed
+                  maxHeight: 100, // Adjust as needed
+                );
+              },
+            ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -113,10 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
             gap: 7,
             iconSize: 18,
             tabs: const [
-              GButton(
-                icon: Icons.home,
-                text: 'Home',
-              ),
+
               GButton(
                 icon: Icons.favorite,
                 text: 'Favorites',
@@ -155,7 +168,10 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               showSearch(
                 context: context,
-                delegate: SongSearchDelegate(songs: Provider.of<SongProvider>(context, listen: false).songs), // Implement SongSearchDelegate
+                delegate: SongSearchDelegate(
+                  songs: Provider.of<SongProvider>(context, listen: false).songs,
+                  onSongSelected: handleSongSelected,
+                ),
               );
             },
           )
@@ -163,48 +179,15 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.background,
       ),
       drawer: const MyDrawer(),
-
-    );
-  }
-
-
-  void _updateSelectedSongIndex(int index) {
-    setState(() {
-      _selectedSongIndex = index;
-    });
-  }
-
-  // Method to build the sliding up panel
-  Widget _buildSlidingUpPanel() {
-    return SlidingUpPanel(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(20.0), // Set your desired top left border radius
-        topRight: Radius.circular(10.0), // Set your desired top right border radius
-      ),
-
-      panel: MediaPlayer(
-          songs: _selectedSongList,
-        initialSongIndex: _selectedSongIndex, // Pass selected song index to MediaPlayer
-        onSongChanged: (int newIndex) {
-          setState(() {
-            // Update any state related to the current song index
-            // For example:
-            //_selectedSongIndex = newIndex;
-          });
-        },
-      ),
-      isDraggable: true,
-      minHeight: 50,
-      maxHeight: 750,
     );
   }
 }
 
 class SongSearchDelegate extends SearchDelegate<String> {
   final List<SongModel> songs;
-  //final audioPlayer = AudioPlayer();
+  final Function(List<SongModel>, int) onSongSelected; // Callback function for song selection
 
-  SongSearchDelegate({required this.songs});
+  SongSearchDelegate({required this.songs, required this.onSongSelected});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -230,8 +213,6 @@ class SongSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildResults(BuildContext context) {
-    // Filter songs based on the search query
-
     final List<SongModel> filteredSongs = songs.where((song) =>
     song.title.toLowerCase().contains(query.toLowerCase()) ||
         (song.artist != null &&
@@ -249,7 +230,7 @@ class SongSearchDelegate extends SearchDelegate<String> {
           subtitle: Text(song.artist ?? 'Unknown Artist'),
           leading: Container(
             width: 56, // Adjust the width as needed
-            height: 56, // Adjust the height as neede
+            height: 56, // Adjust the height as needed
             child: QueryArtworkWidget(
               id: song.id,
               type: ArtworkType.AUDIO,
@@ -258,16 +239,16 @@ class SongSearchDelegate extends SearchDelegate<String> {
             ),
           ),
           onTap: () {
-
+             // Close the search results
           },
         );
       },
     );
   }
 
+
   @override
   Widget buildSuggestions(BuildContext context) {
-    // Filter songs based on the search query
     final List<SongModel> filteredSongs = songs.where((song) =>
     song.title.toLowerCase().contains(query.toLowerCase()) ||
         (song.artist != null &&
@@ -277,25 +258,28 @@ class SongSearchDelegate extends SearchDelegate<String> {
       itemCount: filteredSongs.length,
       itemBuilder: (context, index) {
         final SongModel song = filteredSongs[index];
-        return Container(
-          height: 80,
-          child: ListTile(
-            title: Text(song.title),
-            subtitle: Text(song.artist ?? 'Unknown Artist'),
-            leading: Container(
-              width: 56, // Adjust the width as needed
-              height: 56, // Adjust the height as needed
-              child: QueryArtworkWidget(
-                id: song.id,
-                type: ArtworkType.AUDIO,
-                artworkFit: BoxFit.cover,
-                artworkBorder: BorderRadius.circular(15),
-              ),
-            ),
-            onTap: () {
-              // Handle tapping on search suggestions
-            },
+        return ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20), // Adjust the border radius as needed
           ),
+          title: Text(song.title),
+          subtitle: Text(song.artist ?? 'Unknown Artist'),
+          leading: Container(
+            width: 56, // Adjust the width as needed
+            height: 56, // Adjust the height as needed
+            child: QueryArtworkWidget(
+              id: song.id,
+              type: ArtworkType.AUDIO,
+              artworkFit: BoxFit.cover,
+              artworkBorder: BorderRadius.circular(15),
+            ),
+          ),
+          onTap: () {
+            // Call the callback function to handle song selection
+            onSongSelected(filteredSongs, index);
+            // Close the search results
+            close(context, '');
+          },
         );
       },
     );
