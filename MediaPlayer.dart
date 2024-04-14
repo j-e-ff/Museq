@@ -1,22 +1,23 @@
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:my_first_flutter_project/Themes/theme_Provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
-class AlbumArtWidget extends StatelessWidget {
-  final int id;
+class AlbumArtDisplay extends StatelessWidget {
+  final int songId;
 
-  const AlbumArtWidget({required this.id});
+  const AlbumArtDisplay({Key? key, required this.songId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return QueryArtworkWidget(
-      id: id,
+      id: songId,
       type: ArtworkType.AUDIO,
       artworkQuality: FilterQuality.high,
-      size: 6000,
-      artworkHeight: 350,
-      artworkWidth: 350,
-      artworkFit: BoxFit.fill,
+      size: 9000,
+      artworkHeight: 300,
+      artworkWidth: 300,
       nullArtworkWidget: Icon(Icons.music_note),
     );
   }
@@ -118,30 +119,30 @@ class _MediaPlayerState extends State<MediaPlayer> {
     return Row(
       children: [
         AnimatedContainer(
-          duration: Duration(milliseconds: 500),
+          duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
           width: isExpanded ? 200 : 60, // Adjust the width based on expansion
           height: 60, // Set the height to create a square
-          child: AlbumArtWidget(id: widget.songs[currentSongIndex].id),
+          child: AlbumArtDisplay(songId: widget.songs[currentSongIndex].id),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(top: 10), // Add padding to the top of the text
+            padding: const EdgeInsets.only(top: 10), // Add padding to the top of the text
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.songs[currentSongIndex].title ?? 'Unknown Title',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  widget.songs[currentSongIndex].title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Padding(
-                  padding: EdgeInsets.only(top: 2), // Add additional padding between the text
+                  padding: const EdgeInsets.only(top: 2), // Add additional padding between the text
                   child: Text(
                     "Album: ${widget.songs[currentSongIndex].album ?? 'Unknown Album'}",
-                    style: TextStyle(fontSize: 13),
+                    style: const TextStyle(fontSize: 13),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -155,7 +156,7 @@ class _MediaPlayerState extends State<MediaPlayer> {
           onPressed: _togglePlayPause,
         ),
         IconButton(
-          icon: Icon(Icons.skip_next),
+          icon: const Icon(Icons.skip_next),
           onPressed: _playNextSong,
         ),
       ],
@@ -168,48 +169,39 @@ class _MediaPlayerState extends State<MediaPlayer> {
         child: Stack(
           children: [
             AnimatedContainer(
-              duration: Duration(milliseconds: 90000),
+              duration: const Duration(milliseconds: 90000),
               curve: Curves.easeInOut,
-              padding: EdgeInsets.only(top: 50),
+              padding: const EdgeInsets.only(top: 50),
               alignment: Alignment.topCenter,
-              child: AlbumArtWidget(id: widget.songs[currentSongIndex].id),
+              child: AlbumArtDisplay(songId: widget.songs[currentSongIndex].id),
             ),
             SingleChildScrollView(
               child: Column(
                 children: [
-                  SizedBox(height: 400),
+                  const SizedBox(height: 400),
                   Text(
-                    widget.songs[currentSongIndex].title ?? 'Unknown Title',
-                    style: TextStyle(
+                    widget.songs[currentSongIndex].title,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     "Album: ${widget.songs[currentSongIndex].album ?? 'Unknown Album'}",
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                     ),
                   ),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(formatTime(position)),
-                        Text(formatTime(duration)),
-                      ],
-                    ),
-                  ),
+                  _progressBar(), // Include the progress bar widget here
+                  const SizedBox(height: 20), // Add some spacing below the progress bar
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.skip_previous),
+                        icon: const Icon(Icons.skip_previous),
                         onPressed: _playPreviousSong,
                       ),
-                      SizedBox(width: 20),
+                      const SizedBox(width: 20),
                       CircleAvatar(
                         radius: 45,
                         child: IconButton(
@@ -221,9 +213,9 @@ class _MediaPlayerState extends State<MediaPlayer> {
                           onPressed: _togglePlayPause,
                         ),
                       ),
-                      SizedBox(width: 20),
+                      const SizedBox(width: 20),
                       IconButton(
-                        icon: Icon(Icons.skip_next),
+                        icon: const Icon(Icons.skip_next),
                         onPressed: _playNextSong,
                       ),
                     ],
@@ -236,6 +228,7 @@ class _MediaPlayerState extends State<MediaPlayer> {
       ),
     );
   }
+
 
   String formatTime(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -278,4 +271,26 @@ class _MediaPlayerState extends State<MediaPlayer> {
       currentSongIndex = previousIndex;
     });
   }
+  Widget _progressBar() {
+    return StreamBuilder<Duration?>(
+      stream: audioPlayer.positionStream,
+      builder: (context, snapshot) {
+        return Padding(
+          padding: const EdgeInsets.only(left: 16.0, right: 16, top: 20), // Add horizontal padding
+          child: ProgressBar(
+            progress: snapshot.data ?? Duration.zero,
+            buffered: audioPlayer.bufferedPosition,
+            total: audioPlayer.duration ?? Duration.zero,
+            thumbColor: Colors.blue,
+            progressBarColor: Colors.blue,
+            baseBarColor: Colors.grey.shade800,
+            bufferedBarColor: Colors.grey,
+          ),
+        );
+      },
+    );
+  }
+
 }
+
+
