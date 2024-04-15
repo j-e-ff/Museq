@@ -7,7 +7,6 @@ import 'Pages/albums_Page.dart';
 import 'Pages/artist_Page.dart';
 import 'Pages/playlist_Page.dart';
 import 'Pages/favorites_Page.dart';
-import 'Pages/home_Page.dart';
 import 'Pages/songs_Page.dart';
 import 'package:provider/provider.dart';
 import 'Themes/theme_Provider.dart';

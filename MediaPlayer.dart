@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:my_first_flutter_project/Themes/theme_Provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
 class AlbumArtWidget extends StatefulWidget {
@@ -31,7 +32,7 @@ class _AlbumArtWidgetState extends State<AlbumArtWidget> with AutomaticKeepAlive
       final artwork = await OnAudioQuery().queryArtwork(
         widget.id as int,
         ArtworkType.AUDIO as ArtworkType,
-        size: 5000,
+        size: 9000,
       );
       if (mounted) {
         setState(() {
@@ -188,7 +189,7 @@ class _MediaPlayerState extends State<MediaPlayer> {
           ),
         ),
         IconButton(
-          icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+          icon: Icon(isPlaying ? Icons.pause_outlined : Icons.play_arrow_rounded),
           onPressed: _togglePlayPause,
         ),
         IconButton(
@@ -248,10 +249,10 @@ class _MediaPlayerState extends State<MediaPlayer> {
                         radius: 45,
                         child: IconButton(
                           icon: Icon(
-                            isPlaying ? Icons.pause : Icons.play_circle,
+                            isPlaying ? Icons.pause : Icons.play_arrow_rounded,
+                            color: Colors.black,
                           ),
                           iconSize: 50,
-                          color: Colors.black,
                           onPressed: _togglePlayPause,
                         ),
                       ),
