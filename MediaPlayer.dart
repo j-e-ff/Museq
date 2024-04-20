@@ -1,9 +1,7 @@
 import 'dart:typed_data';
-
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:my_first_flutter_project/Themes/theme_Provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
 class AlbumArtWidget extends StatefulWidget {
@@ -221,7 +219,7 @@ class _MediaPlayerState extends State<MediaPlayer> {
             SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 400),
+                  const SizedBox(height: 420),
                   Text(
                     widget.songs[currentSongIndex].title,
                     style: const TextStyle(

@@ -13,6 +13,7 @@ import 'Themes/theme_Provider.dart';
 import 'Components/songProvider.dart';
 import 'Components/MediaPlayer.dart';
 
+
 void main() {
   runApp(
     MultiProvider(
@@ -54,6 +55,9 @@ class _MyHomePageState extends State<MyHomePage> {
   late List<Widget> _widgetOptions;
   bool _isSongSelected = false;
   List<SongModel> _selectedSongList = []; // Add this line
+  final ValueNotifier<double> playerExpandProgress = ValueNotifier(70.0);
+  static const double playerMinHeight = 70.0;
+
 
   @override
   void initState() {
@@ -98,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
           if (_isSongSelected)
             Miniplayer(
               minHeight: 70,
-              maxHeight: 750,
+              maxHeight: 800,
               builder: (height, percentage) {
                 return MediaPlayer(
                   songs: _selectedSongList,
@@ -112,52 +116,60 @@ class _MyHomePageState extends State<MyHomePage> {
                   maxHeight: 100, // Adjust as needed
                 );
               },
+              valueNotifier: playerExpandProgress, // Pass the value notifier
             ),
         ],
       ),
-      bottomNavigationBar: Container(
-        color: Colors.black,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
-          child: GNav(
-            backgroundColor: Colors.black,
-            color: Colors.white,
-            activeColor: Colors.white,
-            tabBackgroundColor: Colors.grey.shade900,
-            padding: EdgeInsets.all(16),
-            gap: 7,
-            iconSize: 18,
-            tabs: const [
-
-              GButton(
-                icon: Icons.favorite,
-                text: 'Favorites',
+      bottomNavigationBar: ValueListenableBuilder<double>(
+        valueListenable: playerExpandProgress,
+        builder: (context, value, child) {
+          return Visibility(
+            visible: value == playerMinHeight,
+            child: Container(
+              color: Colors.black,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
+                child: GNav(
+                  backgroundColor: Colors.black,
+                  color: Colors.white,
+                  activeColor: Colors.white,
+                  tabBackgroundColor: Colors.grey.shade900,
+                  padding: EdgeInsets.all(16),
+                  gap: 7,
+                  iconSize: 18,
+                  tabs: const [
+                    GButton(
+                      icon: Icons.favorite,
+                      text: 'Favorites',
+                    ),
+                    GButton(
+                      icon: Icons.album,
+                      text: 'Albums',
+                    ),
+                    GButton(
+                      icon: Icons.music_note,
+                      text: 'Songs',
+                    ),
+                    GButton(
+                      icon: Icons.playlist_play,
+                      text: 'Playlist',
+                    ),
+                    GButton(
+                      icon: Icons.person,
+                      text: 'Artist',
+                    ),
+                  ],
+                  selectedIndex: _selectedIndex,
+                  onTabChange: (index) {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                ),
               ),
-              GButton(
-                icon: Icons.album,
-                text: 'Albums',
-              ),
-              GButton(
-                icon: Icons.music_note,
-                text: 'Songs',
-              ),
-              GButton(
-                icon: Icons.playlist_play,
-                text: 'Playlist',
-              ),
-              GButton(
-                icon: Icons.person,
-                text: 'Artist',
-              ),
-            ],
-            selectedIndex: _selectedIndex,
-            onTabChange: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-          ),
-        ),
+            ),
+          );
+        },
       ),
       appBar: AppBar(
         title: Text(widget.title),
@@ -181,6 +193,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
 
 class SongSearchDelegate extends SearchDelegate<String> {
   final List<SongModel> songs;
