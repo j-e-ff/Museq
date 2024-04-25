@@ -172,4 +172,10 @@ class SongProvider extends ChangeNotifier {
     _playlists = playlists;
     notifyListeners();
   }
+
+  void setSelectedSongIndex(int index) {
+    _selectedSongIndex = index;
+    notifyListeners();
+  }
+
 }

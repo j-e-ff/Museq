@@ -113,17 +113,6 @@ class _SongsPageState extends State<SongsPage> {
       ),
     );
   }
-// Method to show popup menu
-  void _showPopupMenu(BuildContext context, SongModel song) async {
-    final selectedPlaylistName = await showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(0, 0, 0, 0),
-      items: _buildPopupMenuItems(song),
-    );
-    if (selectedPlaylistName != null) {
-      _addToPlaylist(selectedPlaylistName, song);
-    }
-  }
 
 // Method to build popup menu items
   List<PopupMenuEntry<String>> _buildPopupMenuItems(SongModel song) {

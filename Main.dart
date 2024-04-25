@@ -251,7 +251,7 @@ class SongSearchDelegate extends SearchDelegate<String> {
             ),
           ),
           onTap: () {
-             // Close the search results
+            // Close the search results
           },
         );
       },

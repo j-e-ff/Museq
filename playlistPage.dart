@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 import '../Components/playlistModel.dart';
 import '../Components/songProvider.dart';
 import 'PlayListDetailPage.dart';
 
 class PlaylistPage extends StatefulWidget {
+  final void Function(List<SongModel>, int) onSongSelected; // Callback function
+
+  const PlaylistPage({Key? key, required this.onSongSelected}) : super(key: key);
+
   @override
   State<PlaylistPage> createState() => _PlaylistPageState();
 }
@@ -16,11 +21,25 @@ class _PlaylistPageState extends State<PlaylistPage> {
     super.initState();
     _songProvider = SongProvider(); // Initialize SongProvider
     _loadPlaylists(); // Load playlists when the page is initialized
+    _createFavoritesPlaylist(); // Create favorites playlist if not exists
   }
 
   Future<void> _loadPlaylists() async {
     await _songProvider.loadPlaylists(); // Load playlists from SharedPreferences
     setState(() {}); // Update the UI after loading playlists
+  }
+
+  Future<void> _createFavoritesPlaylist() async {
+    // Check if "Favorites" playlist exists
+    final existingFavorites = _songProvider.playlists.firstWhere(
+          (playlist) => playlist.name.toLowerCase() == 'favorites',
+      orElse: () => Playlist(name: '', songs: []),
+    );
+
+    // If "Favorites" playlist doesn't exist, create it
+    if (existingFavorites.name.isEmpty) {
+      _songProvider.addPlaylist(Playlist(name: 'Favorites', songs: []));
+    }
   }
 
   @override
@@ -105,7 +124,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PlaylistDetailPage(playlist: playlist),
+        builder: (context) => PlaylistDetailPage(playlist: playlist, onSongSelected: widget.onSongSelected), // Pass the callback function to PlaylistDetailPage
       ),
     );
   }

@@ -6,8 +6,9 @@ import 'package:provider/provider.dart'; // Import Provider package
 
 class PlaylistDetailPage extends StatelessWidget {
   final Playlist playlist;
+  final void Function(List<SongModel>, int) onSongSelected; // Add this line
 
-  const PlaylistDetailPage({required this.playlist});
+  const PlaylistDetailPage({required this.playlist, required this.onSongSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +49,10 @@ class PlaylistDetailPage extends StatelessWidget {
             ),
             title: Text(song.title),
             subtitle: Text(song.artist ?? 'Unknown Artist'),
+            onTap: () {
+              // Call the callback function with the list of songs and the index of the selected song
+              onSongSelected(playlistSongs, index);
+            },
           );
         },
       ),

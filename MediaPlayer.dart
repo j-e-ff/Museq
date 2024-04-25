@@ -2,7 +2,12 @@ import 'dart:typed_data';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:my_first_flutter_project/Components/playlistModel.dart';
+import 'package:my_first_flutter_project/Components/songProvider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:provider/provider.dart';
+
+import 'QueueView.dart';
 
 class AlbumArtWidget extends StatefulWidget {
   final int id;
@@ -30,7 +35,7 @@ class _AlbumArtWidgetState extends State<AlbumArtWidget> with AutomaticKeepAlive
       final artwork = await OnAudioQuery().queryArtwork(
         widget.id as int,
         ArtworkType.AUDIO as ArtworkType,
-        size: 9000,
+        size: 1000,
       );
       if (mounted) {
         setState(() {
@@ -236,8 +241,15 @@ class _MediaPlayerState extends State<MediaPlayer> {
                   _progressBar(), // Include the progress bar widget here
                   const SizedBox(height: 20), // Add some spacing below the progress bar
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center, // Align buttons to the right
                     children: [
+                      IconButton(
+                        icon: Icon(Icons.favorite),
+                        onPressed: () {
+                          _addToFavorites(context); // Add this line to call the method to add to favorites
+                        },
+                      ),
+                      const SizedBox(width: 20),
                       IconButton(
                         icon: const Icon(Icons.skip_previous),
                         onPressed: _playPreviousSong,
@@ -250,7 +262,7 @@ class _MediaPlayerState extends State<MediaPlayer> {
                             isPlaying ? Icons.pause : Icons.play_arrow_rounded,
                             color: Colors.black,
                           ),
-                          iconSize: 50,
+                          iconSize: 45,
                           onPressed: _togglePlayPause,
                         ),
                       ),
@@ -258,6 +270,14 @@ class _MediaPlayerState extends State<MediaPlayer> {
                       IconButton(
                         icon: const Icon(Icons.skip_next),
                         onPressed: _playNextSong,
+                      ),
+                      const SizedBox(width: 20), // Increase spacing between next and queue button
+                      // Add the queue button here
+                      IconButton(
+                        icon: Icon(Icons.queue_music),
+                        onPressed: () {
+                          _showQueueView(context);
+                        },
                       ),
                     ],
                   ),
@@ -269,6 +289,42 @@ class _MediaPlayerState extends State<MediaPlayer> {
       ),
     );
   }
+
+  void _addToFavorites(BuildContext context) {
+    final SongModel song = widget.songs[currentSongIndex];
+    // Access the SongProvider instance using Provider.of
+    final SongProvider songProvider = Provider.of<SongProvider>(context, listen: false);
+    // Get the Favorites playlist
+    final Playlist? favoritesPlaylist = songProvider.playlists.firstWhere(
+          (playlist) => playlist.name.toLowerCase() == 'favorites',
+    );
+    // If Favorites playlist exists
+    if (favoritesPlaylist != null) {
+      // Check if the song already exists in the playlist
+      if (favoritesPlaylist.songs.contains(song.id.toString())) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Song already exists in Favorites playlist.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Add the song to the playlist
+        songProvider.addSongToPlaylist(favoritesPlaylist.name, song.id.toString());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Song added to Favorites playlist.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      print('Favorites playlist does not exist.'); // Handle the case when Favorites playlist is not found
+    }
+  }
+
+
+
 
   String formatTime(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -311,6 +367,7 @@ class _MediaPlayerState extends State<MediaPlayer> {
       currentSongIndex = previousIndex;
     });
   }
+
   Widget _progressBar() {
     return StreamBuilder<Duration?>(
       stream: audioPlayer.positionStream,
@@ -320,9 +377,10 @@ class _MediaPlayerState extends State<MediaPlayer> {
           child: ProgressBar(
             progress: snapshot.data ?? Duration.zero,
             buffered: audioPlayer.bufferedPosition,
-            total: audioPlayer.duration ?? Duration.zero, onSeek: (duration){
+            total: audioPlayer.duration ?? Duration.zero,
+            onSeek: (duration) {
               audioPlayer.seek(duration);
-          },
+            },
             thumbColor: Colors.blue,
             progressBarColor: Colors.blue,
             baseBarColor: Colors.grey.shade800,
@@ -333,4 +391,15 @@ class _MediaPlayerState extends State<MediaPlayer> {
     );
   }
 
+  void _showQueueView(BuildContext context) async {
+    final selectedSongIndex = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QueueView(queue: widget.songs, audioPlayer: audioPlayer),
+      ),
+    );
+    if (selectedSongIndex != null) {
+      _loadNewSong(selectedSongIndex); // Load and play the selected song
+    }
+  }
 }
