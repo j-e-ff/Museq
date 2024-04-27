@@ -65,7 +65,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _selectedSongIndex = 0;
     _searchController = TextEditingController();
     _widgetOptions = [
-      FavoritesPage(),
+      FavoritesPage(
+        onSongSelected: handleSongSelected,
+      ),
       AlbumsPage(
         onSongSelected: handleSongSelected,
       ),
