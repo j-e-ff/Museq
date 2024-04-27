@@ -166,6 +166,9 @@ class SongProvider extends ChangeNotifier {
 
   // Getter for playlists
   List<Playlist> get playlists => _playlists;
+  Playlist? getFavoritesPlaylist() {
+    return _playlists.firstWhere((playlist) => playlist.name == 'Favorites');
+  }
 
   // Method to set the list of playlists
   void setPlaylists(List<Playlist> playlists) {
@@ -176,6 +179,17 @@ class SongProvider extends ChangeNotifier {
   void setSelectedSongIndex(int index) {
     _selectedSongIndex = index;
     notifyListeners();
+  }
+
+  bool isSongInPlaylist(String playlistName, String songId) {
+    // Find the playlist with the given name
+    Playlist? playlist = _playlists.firstWhere((playlist) => playlist.name == playlistName);
+    // If the playlist exists, check if the song ID is present in the playlist
+    if (playlist != null) {
+      return playlist.songs.contains(songId);
+    }
+    // If playlist doesn't exist or song ID is not found, return false
+    return false;
   }
 
 }
