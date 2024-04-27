@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import '../Components/playlistModel.dart';
 import '../Components/songProvider.dart';
 import 'package:marquee/marquee.dart';
 
@@ -45,11 +46,6 @@ class AlbumsPage extends StatelessWidget {
                     final albumEntry = filteredAlbumsMap[index];
                     final albumName = albumEntry.key; // Add null check here
                     final songList = albumEntry.value ?? []; // Use null-aware operator and provide a default value if null
-
-                    if (albumName == null) {
-                      // Handle the case where albumName is null
-                      return SizedBox(); // or any other appropriate widget
-                    }
 
                     // Extracting artist names from song list
                     final artistNames =
@@ -150,7 +146,8 @@ class AlbumDetailPage extends StatelessWidget {
   final List<SongModel> songList;
   final void Function(List<SongModel>, int) onSongSelected; // Updated callback function
 
-  const AlbumDetailPage({
+
+   const AlbumDetailPage({
     required this.albumName,
     required this.songList,
     required this.onSongSelected, // Receive the callback function
@@ -292,11 +289,18 @@ class AlbumDetailPage extends StatelessWidget {
                           // Three-dot icons column
                           Expanded(
                             flex: 1,
-                            child: IconButton(
+                            child: PopupMenuButton<String>(
                               icon: Icon(Icons.more_vert),
-                              alignment: Alignment.center,
-                              onPressed: () {
-                                // Add your action here when the three-dot icon is tapped
+                              itemBuilder: (context) => <PopupMenuEntry<String>>[
+                                PopupMenuItem<String>(
+                                  value: 'addToPlaylist',
+                                  child: Text('Add to Playlist'),
+                                ),
+                              ],
+                              onSelected: (String value) {
+                                if (value == 'addToPlaylist') {
+                                  _showAddToPlaylistDialog(context, songList[index]); // Show dialog to select playlist
+                                }
                               },
                             ),
                           ),
@@ -314,6 +318,65 @@ class AlbumDetailPage extends StatelessWidget {
     );
   }
 
+  void _addToPlaylist(BuildContext context, String playlistName, SongModel song) {
+    // Retrieve the SongProvider instance from the widget tree
+    SongProvider songProvider = Provider.of<SongProvider>(context, listen: false);
+
+    // Check if the song ID is already present in the playlist
+    if (songProvider.isSongInPlaylist(playlistName, song.id.toString())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Song is already in the playlist.'),
+        ),
+      );
+    } else {
+      // Add the song to the selected playlist
+      songProvider.addSongToPlaylist(playlistName, song.id.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Song added to $playlistName.'),
+        ),
+      );
+    }
+  }
+
+  void _showAddToPlaylistDialog(BuildContext context, SongModel song) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Add to Playlist'),
+          content: Consumer<SongProvider>(
+            builder: (context, songProvider, _) {
+              // Access playlists directly from the songProvider
+              List<Playlist> playlists = songProvider.playlists;
+              print('Number of playlists: ${playlists.length}'); // Print the item count to the console
+              return SizedBox(
+                width: double.maxFinite,
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: ListView.builder(
+                  itemCount: playlists.length,
+                  itemBuilder: (context, index) {
+                    Playlist playlist = playlists[index];
+                    return ListTile(
+                      title: Text(playlist.name),
+                      onTap: () {
+                        Navigator.pop(context, playlist); // Return selected playlist
+                      },
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ).then((selectedPlaylist) {
+      if (selectedPlaylist != null) {
+        _addToPlaylist(context, selectedPlaylist.name, song); // Pass the context her
+      }
+    });
+  }
   // Helper method to calculate the total duration of the album in minutes
   String _calculateTotalDuration(List<SongModel> songs) {
     // Calculate the total duration of the album in milliseconds
