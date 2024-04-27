@@ -53,58 +53,63 @@ class _SongsPageState extends State<SongsPage> {
             return Scrollbar(
               trackVisibility: true, // Ensures scrollbar is always visible
               child: ListView.builder(
-                itemCount: songProvider.songs.length,
+                itemCount: songProvider.songs.length + 1, // Add 1 for padding
                 itemBuilder: (context, index) {
-                  final song = songProvider.songs[index];
-                  return GestureDetector(
-                    onTap: () {
-                      // Fetch the list of songs from the SongProvider
-                      List<SongModel> songs = Provider.of<SongProvider>(context, listen: false).songs;
-                      // Call the callback function with the list of songs and the index of the selected song
-                      widget.onSongSelected(songs, index);
-                    },
-                    child: ListTile(
-                      title: Text(song.title),
-                      subtitle: Row(
-                        children: [
-                          Text(
-                            song.artist ?? 'Unknown Artist',
-                            style: TextStyle(
-                              fontSize: 12,
+                  if (index == songProvider.songs.length) {
+                    // Return a container with padding as the last item
+                    return SizedBox(height: 70); // Adjust the height as needed
+                  } else {
+                    final song = songProvider.songs[index];
+                    return GestureDetector(
+                      onTap: () {
+                        // Fetch the list of songs from the SongProvider
+                        List<SongModel> songs = Provider.of<SongProvider>(context, listen: false).songs;
+                        // Call the callback function with the list of songs and the index of the selected song
+                        widget.onSongSelected(songs, index);
+                      },
+                      child: ListTile(
+                        title: Text(song.title),
+                        subtitle: Row(
+                          children: [
+                            Text(
+                              song.artist ?? 'Unknown Artist',
+                              style: TextStyle(
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            _formatDuration(song.duration),
-                            style: TextStyle(
-                              fontSize: 12,
+                            SizedBox(width: 8),
+                            Text(
+                              _formatDuration(song.duration),
+                              style: TextStyle(
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        trailing: PopupMenuButton<String>(
+                          icon: Icon(Icons.more_vert),
+                          itemBuilder: (context) => <PopupMenuEntry<String>>[
+                            PopupMenuItem<String>(
+                              value: 'addToPlaylist',
+                              child: Text('Add to Playlist'),
+                            ),
+                          ],
+                          onSelected: (String value) {
+                            if (value == 'addToPlaylist') {
+                              _showAddToPlaylistDialog(context, song); // Show dialog to select playlist
+                            }
+                          },
+                        ),
+                        leading: QueryArtworkWidget(
+                          id: song.id,
+                          type: ArtworkType.AUDIO,
+                          artworkBorder: BorderRadius.circular(15),
+                          quality: 100,
+                          size: 1000,
+                        ),
                       ),
-                      trailing: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert),
-                        itemBuilder: (context) => <PopupMenuEntry<String>>[
-                          PopupMenuItem<String>(
-                            value: 'addToPlaylist',
-                            child: Text('Add to Playlist'),
-                          ),
-                        ],
-                        onSelected: (String value) {
-                          if (value == 'addToPlaylist') {
-                            _showAddToPlaylistDialog(context, song); // Show dialog to select playlist
-                          }
-                        },
-                      ),
-                      leading: QueryArtworkWidget(
-                        id: song.id,
-                        type: ArtworkType.AUDIO,
-                        artworkBorder: BorderRadius.circular(15),
-                        quality: 100,
-                        size: 1000,
-                      ),
-                    ),
-                  );
+                    );
+                  }
                 },
               ),
             );
@@ -124,11 +129,29 @@ class _SongsPageState extends State<SongsPage> {
     }).toList();
   }
 
-// Method to handle adding the selected song to the selected playlist
-  void _addToPlaylist(String playlistName, SongModel song) {
-    _songProvider.addSongToPlaylist(playlistName, song.id.toString());
-    // You can add any additional logic here, such as showing a confirmation message
+
+  void _addToPlaylist(BuildContext context, String playlistName, SongModel song) {
+    // Retrieve the SongProvider instance from the widget tree
+    SongProvider songProvider = Provider.of<SongProvider>(context, listen: false);
+
+    // Check if the song ID is already present in the playlist
+    if (songProvider.isSongInPlaylist(playlistName, song.id.toString())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Song is already in the playlist.'),
+        ),
+      );
+    } else {
+      // Add the song to the selected playlist
+      songProvider.addSongToPlaylist(playlistName, song.id.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Song added to $playlistName.'),
+        ),
+      );
+    }
   }
+
   void _showAddToPlaylistDialog(BuildContext context, SongModel song) {
     showDialog(
       context: context,
@@ -162,14 +185,7 @@ class _SongsPageState extends State<SongsPage> {
       },
     ).then((selectedPlaylist) {
       if (selectedPlaylist != null) {
-        print('Length of ${selectedPlaylist.name} before adding song: ${selectedPlaylist.songs.length}');
-        _addToPlaylist(selectedPlaylist.name, song); // Call _addToPlaylist method
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Song added to ${selectedPlaylist.name}'),
-          ),
-        );
-        print('Length of ${selectedPlaylist.name} after adding song: ${selectedPlaylist.songs.length}');
+        _addToPlaylist(context,selectedPlaylist.name, song); // Call _addToPlaylist method
       }
     });
   }
